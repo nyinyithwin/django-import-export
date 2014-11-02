@@ -116,16 +116,16 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
 
         confirm_form = ConfirmImportForm(request.POST)
-        def tableprocess():
-            import_formats = self.get_import_formats()
-            input_format = import_formats[
-                int(confirm_form.cleaned_data['input_format'])
-            ]()
-            import_file_name = os.path.join(
-                tempfile.gettempdir(),
-                confirm_form.cleaned_data['import_file_name']
-            )
-            import_file = open(import_file_name, input_format.get_read_mode())
+        import_formats = self.get_import_formats()
+        input_format = import_formats[
+            int(confirm_form.cleaned_data['input_format'])
+        ]()
+        import_file_name = os.path.join(
+            tempfile.gettempdir(),
+            confirm_form.cleaned_data['import_file_name']
+        )
+        import_file = open(import_file_name, input_format.get_read_mode())
+        def tableprocess(msg):
             data = import_file.read()
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
@@ -151,12 +151,14 @@ class ImportMixin(ImportExportMixinBase):
                     action_flag=logentry_map[row.import_type],
                     change_message="%s through import_export" % row.import_type,
                 )
-            import_file.close()
+            
         if confirm_form.is_valid():
             queue = django_rq.get_queue('high')
-            queue.enqueue(tableprocess)
+            msg = "msg"
+            queue.enqueue(tableprocess, msg)
             success_message = _('Import finished')
             messages.success(request, success_message)
+            import_file.close()
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
