@@ -13,7 +13,32 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
+import django_rq
 
+queue = django_rq.get_queue('high')
+def tableprocess(data):
+    data = uploaded_import_file.read()
+    if not input_format.is_binary() and self.from_encoding:
+        data = force_text(data, self.from_encoding)
+    dataset = input_format.create_dataset(data)
+    result = resource.import_data(dataset, dry_run=True,
+                                              raise_errors=False)
+
+    context['result'] = result
+
+    if not result.has_errors():
+        context['confirm_form'] = ConfirmImportForm(initial={
+                'import_file_name': os.path.basename(uploaded_file.name),
+                'input_format': form.cleaned_data['input_format'],
+        })
+
+    context['form'] = form
+    context['opts'] = self.model._meta
+    context['fields'] = [f.column_name for f in resource.get_fields()]
+
+    return TemplateResponse(request, [self.import_template_name],
+                                context, current_app=self.admin_site.name)
+    
 from .forms import (
     ImportForm,
     ConfirmImportForm,
@@ -185,27 +210,8 @@ class ImportMixin(ImportExportMixinBase):
             with open(uploaded_file.name,
                       input_format.get_read_mode()) as uploaded_import_file:
                 # warning, big files may exceed memory
-                data = uploaded_import_file.read()
-                if not input_format.is_binary() and self.from_encoding:
-                    data = force_text(data, self.from_encoding)
-                dataset = input_format.create_dataset(data)
-                result = resource.import_data(dataset, dry_run=True,
-                                              raise_errors=False)
-
-            context['result'] = result
-
-            if not result.has_errors():
-                context['confirm_form'] = ConfirmImportForm(initial={
-                    'import_file_name': os.path.basename(uploaded_file.name),
-                    'input_format': form.cleaned_data['input_format'],
-                })
-
-        context['form'] = form
-        context['opts'] = self.model._meta
-        context['fields'] = [f.column_name for f in resource.get_fields()]
-
-        return TemplateResponse(request, [self.import_template_name],
-                                context, current_app=self.admin_site.name)
+                queue.enqueue(tableprocess, uploaded_import_file)
+            HttpResponse('Processing Please Wait.....')
 
 
 class ExportMixin(ImportExportMixinBase):
