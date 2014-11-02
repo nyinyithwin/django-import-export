@@ -211,7 +211,8 @@ class ImportMixin(ImportExportMixinBase):
                       input_format.get_read_mode()) as uploaded_import_file:
                 # warning, big files may exceed memory
                 queue.enqueue(tableprocess, uploaded_import_file)
-            HttpResponse('Processing Please Wait.....')
+            return TemplateResponse(request, [self.import_template_name],
+                                context, current_app=self.admin_site.name)
 
 
 class ExportMixin(ImportExportMixinBase):
