@@ -220,10 +220,10 @@ class ImportMixin(ImportExportMixinBase):
             #context['result'] = result
 
             #if not result.has_errors():
-        context['confirm_form'] = ConfirmImportForm(initial={
-            'import_file_name': os.path.basename(uploaded_file.name),
-            'input_format': form.cleaned_data['input_format'],
-           })
+            context['confirm_form'] = ConfirmImportForm(initial={
+                'import_file_name': os.path.basename(uploaded_file.name),
+                'input_format': form.cleaned_data['input_format'],
+            })
 
         context['form'] = form
         context['opts'] = self.model._meta
