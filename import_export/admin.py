@@ -16,6 +16,7 @@ from django.core.urlresolvers import reverse
 import django_rq
 
 def tableprocess(data):
+    data = data
     if not input_format.is_binary() and "utf-8":
         data = force_text(data, "utf-8")
     dataset = input_format.create_dataset(data)
