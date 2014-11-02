@@ -116,8 +116,6 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
         confirm_form = ConfirmImportForm(request.POST)
         def tableprocess():
-            result = resource.import_data(dataset, dry_run=False,
-                            raise_errors=True)
             for row in result:
                 if row.import_type != row.IMPORT_TYPE_SKIP:
                     LogEntry.objects.log_action(
@@ -151,6 +149,8 @@ class ImportMixin(ImportExportMixinBase):
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
             dataset = input_format.create_dataset(data)
+            result = resource.import_data(dataset, dry_run=False,
+                            raise_errors=True)
             queue = django_rq.get_queue('high')
             queue.enqueue(tableprocess)
             success_message = _('Import finished')
