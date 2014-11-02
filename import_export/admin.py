@@ -117,25 +117,25 @@ class ImportMixin(ImportExportMixinBase):
 
         confirm_form = ConfirmImportForm(request.POST)
         if confirm_form.is_valid():
-            import_formats = self.get_import_formats()
-            input_format = import_formats[
-                int(confirm_form.cleaned_data['input_format'])
-            ]()
-            import_file_name = os.path.join(
-                tempfile.gettempdir(),
-                confirm_form.cleaned_data['import_file_name']
-            )
             import_file_name_2 = import_file_name
             queue = django_rq.get_queue('high')
-            queue.enqueue(self.tableprocess, input_format)
+            queue.enqueue(self.tableprocess, confirm_form)
             success_message = _('Import finished')
             messages.success(request, success_message)
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
 
-    def tableprocess(self, input_format):
-        import_file = open(import_file_name_2, input_format.get_read_mode())
+    def tableprocess(self, confirm_form):
+        import_formats = self.get_import_formats()
+        input_format = import_formats[
+            int(confirm_form.cleaned_data['input_format'])
+        ]()
+        import_file_name = os.path.join(
+            tempfile.gettempdir(),
+            confirm_form.cleaned_data['import_file_name']
+        )
+        import_file = open(import_file_name, input_format.get_read_mode())
         data = import_file.read()
         if not input_format.is_binary() and self.from_encoding:
             data = force_text(data, self.from_encoding)
