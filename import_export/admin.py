@@ -16,27 +16,18 @@ from django.core.urlresolvers import reverse
 import django_rq
 
 queue = django_rq.get_queue('high')
-def tableprocess(data):
-    if not input_format.is_binary() and self.from_encoding:
-        data = force_text(data, self.from_encoding)
-    dataset = input_format.create_dataset(data)
-    result = resource.import_data(dataset, dry_run=True,
-                                              raise_errors=False)
+def tableprocess(result):
+    for row in result:
+        if row.import_type != row.IMPORT_TYPE_SKIP:
+            LogEntry.objects.log_action(
+                user_id=request.user.pk,
+                content_type_id=content_type_id,
+                object_id=row.object_id,
+                object_repr=row.object_repr,
+                action_flag=logentry_map[row.import_type],
+                change_message="%s through import_export" % row.import_type,
+                )
 
-    context['result'] = result
-
-    if not result.has_errors():
-        context['confirm_form'] = ConfirmImportForm(initial={
-                'import_file_name': os.path.basename(uploaded_file.name),
-                'input_format': form.cleaned_data['input_format'],
-        })
-
-    context['form'] = form
-    context['opts'] = self.model._meta
-    context['fields'] = [f.column_name for f in resource.get_fields()]
-
-    return TemplateResponse(request, [self.import_template_name],
-                                context, current_app=self.admin_site.name)
     
 from .forms import (
     ImportForm,
@@ -159,17 +150,7 @@ class ImportMixin(ImportExportMixinBase):
                 RowResult.IMPORT_TYPE_DELETE: DELETION,
             }
             content_type_id=ContentType.objects.get_for_model(self.model).pk
-            for row in result:
-                if row.import_type != row.IMPORT_TYPE_SKIP:
-                    LogEntry.objects.log_action(
-                        user_id=request.user.pk,
-                        content_type_id=content_type_id,
-                        object_id=row.object_id,
-                        object_repr=row.object_repr,
-                        action_flag=logentry_map[row.import_type],
-                        change_message="%s through import_export" % row.import_type,
-                    )
-
+            queue.enqueue(tableprocess, result)
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
