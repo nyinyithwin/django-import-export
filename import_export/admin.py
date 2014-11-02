@@ -15,34 +15,6 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-queue = django_rq.get_queue('high')
-def tableprocess(self, import_file_name, input_format):
-    import_file = open(import_file_name, input_format.get_read_mode())
-    data = import_file.read()
-    if not input_format.is_binary() and self.from_encoding:
-        data = force_text(data, self.from_encoding)
-    dataset = input_format.create_dataset(data)
-
-    result = resource.import_data(dataset, dry_run=False,
-                                 raise_errors=True)
-
-            # Add imported objects to LogEntry
-    logentry_map = {
-                RowResult.IMPORT_TYPE_NEW: ADDITION,
-                RowResult.IMPORT_TYPE_UPDATE: CHANGE,
-                RowResult.IMPORT_TYPE_DELETE: DELETION,
-            }
-    content_type_id=ContentType.objects.get_for_model(self.model).pk
-    for row in result:
-        if row.import_type != row.IMPORT_TYPE_SKIP:
-            LogEntry.objects.log_action(
-                user_id=request.user.pk,
-                content_type_id=content_type_id,
-                object_id=row.object_id,
-                object_repr=row.object_repr,
-                action_flag=logentry_map[row.import_type],
-                change_message="%s through import_export" % row.import_type,
-                )
 
     
 from .forms import (
@@ -99,7 +71,9 @@ class ImportMixin(ImportExportMixinBase):
     formats = DEFAULT_FORMATS
     #: import data encoding
     from_encoding = "utf-8"
-
+            
+    queue = django_rq.get_queue('high')
+    
     def get_urls(self):
         urls = super(ImportMixin, self).get_urls()
         info = self.get_model_info()
@@ -159,6 +133,34 @@ class ImportMixin(ImportExportMixinBase):
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
 
+    def tableprocess(self, import_file_name, input_format):
+        import_file = open(import_file_name, input_format.get_read_mode())
+        data = import_file.read()
+        if not input_format.is_binary() and self.from_encoding:
+            data = force_text(data, self.from_encoding)
+        dataset = input_format.create_dataset(data)
+
+        result = resource.import_data(dataset, dry_run=False,
+                                 raise_errors=True)
+
+            # Add imported objects to LogEntry
+        logentry_map = {
+                RowResult.IMPORT_TYPE_NEW: ADDITION,
+                RowResult.IMPORT_TYPE_UPDATE: CHANGE,
+                RowResult.IMPORT_TYPE_DELETE: DELETION,
+            }
+        content_type_id=ContentType.objects.get_for_model(self.model).pk
+        for row in result:
+            if row.import_type != row.IMPORT_TYPE_SKIP:
+                LogEntry.objects.log_action(
+                    user_id=request.user.pk,
+                    content_type_id=content_type_id,
+                    object_id=row.object_id,
+                    object_repr=row.object_repr,
+                    action_flag=logentry_map[row.import_type],
+                    change_message="%s through import_export" % row.import_type,
+                )
+                
     def import_action(self, request, *args, **kwargs):
         '''
         Perform a dry_run of the import to make sure the import will not
