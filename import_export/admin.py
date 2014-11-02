@@ -123,7 +123,7 @@ class ImportMixin(ImportExportMixinBase):
                 confirm_form.cleaned_data['import_file_name']
             )
             queue = django_rq.get_queue('high')
-            queue.enqueue(self.tableprocess, import_file_name, input_format)
+            queue.enqueue(tableprocess, import_file_name, input_format)
             success_message = _('Import finished')
             messages.success(request, success_message)
             
@@ -132,11 +132,11 @@ class ImportMixin(ImportExportMixinBase):
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
 
-    def tableprocess(self, import_file_name, input_format):
+    def tableprocess(import_file_name, input_format):
         import_file = open(import_file_name, input_format.get_read_mode())
         data = import_file.read()
-        if not input_format.is_binary() and self.from_encoding:
-            data = force_text(data, self.from_encoding)
+        if not input_format.is_binary() and "utf-8":
+            data = force_text(data, "utf-8")
         dataset = input_format.create_dataset(data)
 
         result = resource.import_data(dataset, dry_run=False,
