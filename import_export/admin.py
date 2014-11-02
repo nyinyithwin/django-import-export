@@ -39,7 +39,7 @@ def tableprocess(data):
                 action_flag=logentry_map[row.import_type],
                 change_message="%s through import_export" % row.import_type,
             )
-    import_file.close()
+
 
     
 from .forms import (
@@ -153,8 +153,7 @@ class ImportMixin(ImportExportMixinBase):
             queue.enqueue(tableprocess, data)
             success_message = _('Import finished')
             messages.success(request, success_message)
-            
-
+            import_file.close()
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
