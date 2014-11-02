@@ -116,9 +116,6 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
         confirm_form = ConfirmImportForm(request.POST)
         def tableprocess():
-            if not input_format.is_binary() and self.from_encoding:
-                data = force_text(data, self.from_encoding)
-            dataset = input_format.create_dataset(data)
             result = resource.import_data(dataset, dry_run=False,
                             raise_errors=True)
             for row in result:
@@ -151,6 +148,9 @@ class ImportMixin(ImportExportMixinBase):
                 RowResult.IMPORT_TYPE_DELETE: DELETION,
             }
             content_type_id=ContentType.objects.get_for_model(self.model).pk
+            if not input_format.is_binary() and self.from_encoding:
+                data = force_text(data, self.from_encoding)
+            dataset = input_format.create_dataset(data)
             queue = django_rq.get_queue('high')
             queue.enqueue(tableprocess)
             success_message = _('Import finished')
