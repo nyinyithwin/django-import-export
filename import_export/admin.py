@@ -71,8 +71,6 @@ class ImportMixin(ImportExportMixinBase):
     formats = DEFAULT_FORMATS
     #: import data encoding
     from_encoding = "utf-8"
-            
-    queue = django_rq.get_queue('high')
     
     def get_urls(self):
         urls = super(ImportMixin, self).get_urls()
@@ -124,6 +122,7 @@ class ImportMixin(ImportExportMixinBase):
                 tempfile.gettempdir(),
                 confirm_form.cleaned_data['import_file_name']
             )
+            queue = django_rq.get_queue('high')
             queue.enqueue(self.tableprocess, import_file_name, input_format)
             success_message = _('Import finished')
             messages.success(request, success_message)
