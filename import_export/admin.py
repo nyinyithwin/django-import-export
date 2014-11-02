@@ -142,6 +142,7 @@ class ImportMixin(ImportExportMixinBase):
                     action_flag=logentry_map[row.import_type],
                     change_message="%s through import_export" % row.import_type,
                 )
+            import_file.close()
             
         if confirm_form.is_valid():
             # Add imported objects to LogEntry
@@ -155,7 +156,6 @@ class ImportMixin(ImportExportMixinBase):
             queue.enqueue(tableprocess)
             success_message = _('Import finished')
             messages.success(request, success_message)
-            import_file.close()
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
