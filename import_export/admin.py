@@ -127,7 +127,7 @@ class ImportMixin(ImportExportMixinBase):
             )
             import_file_name_2 = import_file_name
             queue = django_rq.get_queue('high')
-            queue.enqueue(tableprocess, input_format)
+            queue.enqueue(self.tableprocess, input_format)
             success_message = _('Import finished')
             messages.success(request, success_message)
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
