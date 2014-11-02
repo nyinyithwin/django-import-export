@@ -78,39 +78,10 @@
     </ul>
   {% else %}
 
-  <h2>
-    {% trans "Preview" %}
-  </h2>
-  <table>
-    <thead>
-      <tr>
-        <th></th>
-        {% for field in fields %}
-          <th>{{ field }}</th>
-        {% endfor %}
-      </tr>
-    </thead>
-    {% for row in result.rows %}
-    <tr>
-      <td>
-        {% if row.import_type == 'new' %}
-          {% trans "New" %}
-        {% elif row.import_type == 'skip' %}
-          {% trans "Skipped" %}
-        {% elif row.import_type == 'delete' %}
-          {% trans "Delete" %}
-        {% elif row.import_type == 'update' %}
-          {% trans "Update" %}
-        {% endif %}
-      </td>
-      {% for field in row.diff %}
-      <td>
-        {{ field }}
-      </td>
-      {% endfor %}
-    </etr>
-    {% endfor %}
-  </table>
+  <p>
+    {{ result|length }}
+  </p>
+  
   {% endif %}
 
   {% endif %}
