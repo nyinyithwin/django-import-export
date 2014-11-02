@@ -116,6 +116,11 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
         confirm_form = ConfirmImportForm(request.POST)
         def tableprocess():
+            if not input_format.is_binary() and self.from_encoding:
+                data = force_text(data, self.from_encoding)
+            dataset = input_format.create_dataset(data)
+            result = resource.import_data(dataset, dry_run=False,
+                            raise_errors=True)
             for row in result:
                 if row.import_type != row.IMPORT_TYPE_SKIP:
                     LogEntry.objects.log_action(
@@ -139,12 +144,6 @@ class ImportMixin(ImportExportMixinBase):
             )
             import_file = open(import_file_name, input_format.get_read_mode())
             data = import_file.read()
-            if not input_format.is_binary() and self.from_encoding:
-                data = force_text(data, self.from_encoding)
-            dataset = input_format.create_dataset(data)
-    
-            result = resource.import_data(dataset, dry_run=False,
-                            raise_errors=True)
             # Add imported objects to LogEntry
             logentry_map = {
                 RowResult.IMPORT_TYPE_NEW: ADDITION,
