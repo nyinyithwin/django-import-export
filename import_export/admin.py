@@ -16,8 +16,7 @@ from django.core.urlresolvers import reverse
 import django_rq
 
 queue = django_rq.get_queue('high')
-def tableprocess(uploaded_import_file):
-    data = uploaded_import_file.read()
+def tableprocess(data):
     if not input_format.is_binary() and self.from_encoding:
         data = force_text(data, self.from_encoding)
     dataset = input_format.create_dataset(data)
@@ -210,8 +209,8 @@ class ImportMixin(ImportExportMixinBase):
             with open(uploaded_file.name,
                       input_format.get_read_mode()) as uploaded_import_file:
                 # warning, big files may exceed memory
-                queue.enqueue(tableprocess, uploaded_import_file)
                 data = uploaded_import_file.read()
+                queue.enqueue(tableprocess, data)
                 if not input_format.is_binary() and self.from_encoding:
                     data = force_text(data, self.from_encoding)
                 dataset = input_format.create_dataset(data)
