@@ -125,7 +125,6 @@ class ImportMixin(ImportExportMixinBase):
                 confirm_form.cleaned_data['import_file_name']
             )
             import_file = open(import_file_name, input_format.get_read_mode())
-            queue = django_rq.get_queue('high')
             data = import_file.read()
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
@@ -152,6 +151,7 @@ class ImportMixin(ImportExportMixinBase):
                 RowResult.IMPORT_TYPE_DELETE: DELETION,
             }
             content_type_id=ContentType.objects.get_for_model(self.model).pk
+            queue = django_rq.get_queue('high')
             queue.enqueue(tableprocess)
             success_message = _('Import finished')
             messages.success(request, success_message)
