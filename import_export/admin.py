@@ -117,7 +117,6 @@ class ImportMixin(ImportExportMixinBase):
 
         confirm_form = ConfirmImportForm(request.POST)
         if confirm_form.is_valid():
-            import_file_name_2 = import_file_name
             queue = django_rq.get_queue('high')
             queue.enqueue(self.tableprocess, confirm_form)
             success_message = _('Import finished')
