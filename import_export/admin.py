@@ -15,20 +15,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-def tableprocess(data):
-    data = data
-    if not input_format.is_binary() and "utf-8":
-        data = force_text(data, "utf-8")
-    dataset = input_format.create_dataset(data)
-    result = resource.import_data(dataset, dry_run=False,
-                             raise_errors=True)
-            # Add imported objects to LogEntry
-    logentry_map = {
-            RowResult.IMPORT_TYPE_NEW: ADDITION,
-            RowResult.IMPORT_TYPE_UPDATE: CHANGE,
-            RowResult.IMPORT_TYPE_DELETE: DELETION,
-        }
-    content_type_id=ContentType.objects.get_for_model(self.model).pk
+def tableprocess(result):
     for row in result:
         if row.import_type != row.IMPORT_TYPE_SKIP:
             LogEntry.objects.log_action(
@@ -147,10 +134,24 @@ class ImportMixin(ImportExportMixinBase):
                 tempfile.gettempdir(),
                 confirm_form.cleaned_data['import_file_name']
             )
-            queue = django_rq.get_queue('high')
             import_file = open(import_file_name, input_format.get_read_mode())
             data = import_file.read()
-            queue.enqueue(tableprocess, data)
+            if not input_format.is_binary() and self.from_encoding:
+                data = force_text(data, self.from_encoding)
+            dataset = input_format.create_dataset(data)
+
+            result = resource.import_data(dataset, dry_run=False,
+                                 raise_errors=True)
+
+            # Add imported objects to LogEntry
+            logentry_map = {
+                RowResult.IMPORT_TYPE_NEW: ADDITION,
+                RowResult.IMPORT_TYPE_UPDATE: CHANGE,
+                RowResult.IMPORT_TYPE_DELETE: DELETION,
+            }
+            content_type_id=ContentType.objects.get_for_model(self.model).pk
+            queue = django_rq.get_queue('high')
+            queue.enqueue(tableprocess, result)
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
