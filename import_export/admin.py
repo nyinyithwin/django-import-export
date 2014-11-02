@@ -115,19 +115,7 @@ class ImportMixin(ImportExportMixinBase):
         opts = self.model._meta
         resource = self.get_import_resource_class()()
         confirm_form = ConfirmImportForm(request.POST)
-        def tableprocess(msg):
-            for row in result:
-                if row.import_type != row.IMPORT_TYPE_SKIP:
-                    LogEntry.objects.log_action(
-                    user_id=request.user.pk,
-                    content_type_id=content_type_id,
-                    object_id=row.object_id,
-                    object_repr=row.object_repr,
-                    action_flag=logentry_map[row.import_type],
-                    change_message="%s through import_export" % row.import_type,
-                )
-            
-        if confirm_form.is_valid():
+        def tableprocess():
             import_formats = self.get_import_formats()
             input_format = import_formats[
                 int(confirm_form.cleaned_data['input_format'])
@@ -145,7 +133,18 @@ class ImportMixin(ImportExportMixinBase):
     
             result = resource.import_data(dataset, dry_run=False,
                             raise_errors=True)
-
+            for row in result:
+                if row.import_type != row.IMPORT_TYPE_SKIP:
+                    LogEntry.objects.log_action(
+                    user_id=request.user.pk,
+                    content_type_id=content_type_id,
+                    object_id=row.object_id,
+                    object_repr=row.object_repr,
+                    action_flag=logentry_map[row.import_type],
+                    change_message="%s through import_export" % row.import_type,
+                )
+            
+        if confirm_form.is_valid():
             # Add imported objects to LogEntry
             logentry_map = {
                 RowResult.IMPORT_TYPE_NEW: ADDITION,
