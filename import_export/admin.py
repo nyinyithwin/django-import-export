@@ -16,7 +16,7 @@ from django.core.urlresolvers import reverse
 import django_rq
 
 queue = django_rq.get_queue('high')
-def tableprocess(data):
+def tableprocess(uploaded_import_file):
     data = uploaded_import_file.read()
     if not input_format.is_binary() and self.from_encoding:
         data = force_text(data, self.from_encoding)
