@@ -126,7 +126,7 @@ class ImportMixin(ImportExportMixinBase):
             queue.enqueue(self.tableprocess, import_file_name, input_format)
             success_message = _('Import finished')
             messages.success(request, success_message)
-            import_file.close()
+            
 
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
@@ -159,6 +159,7 @@ class ImportMixin(ImportExportMixinBase):
                     action_flag=logentry_map[row.import_type],
                     change_message="%s through import_export" % row.import_type,
                 )
+        import_file.close()
                 
     def import_action(self, request, *args, **kwargs):
         '''
