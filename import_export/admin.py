@@ -217,7 +217,7 @@ class ImportMixin(ImportExportMixinBase):
                 result = resource.import_data(dataset, dry_run=True,
                                               raise_errors=False)
 
-            context['result'] = result
+            context['result'] = result[0:100]
 
             if not result.has_errors():
                 context['confirm_form'] = ConfirmImportForm(initial={
