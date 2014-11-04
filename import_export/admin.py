@@ -182,17 +182,16 @@ class ImportMixin(ImportExportMixinBase):
                     uploaded_file.write(chunk)
 
             # then read the file, using the proper format-specific mode
-            with open(uploaded_file.name,
-                      input_format.get_read_mode()) as uploaded_import_file:
+            #with open(uploaded_file.name,
+            #          input_format.get_read_mode()) as uploaded_import_file:
                 # warning, big files may exceed memory
-                data = uploaded_import_file.read()
-                if not input_format.is_binary() and self.from_encoding:
-                    data = force_text(data, self.from_encoding)
-                dataset = input_format.create_dataset(data)
-                result = resource.import_data(dataset, dry_run=True,
-                                              raise_errors=False)
+            #    data = uploaded_import_file.read()
+            #    if not input_format.is_binary() and self.from_encoding:
+            #        data = force_text(data, self.from_encoding)
+            #    dataset = input_format.create_dataset(data)
+            ##                                  raise_errors=False)
 
-            context['result'] = result
+            #context['result'] = result
 
             if not result.has_errors():
                 context['confirm_form'] = ConfirmImportForm(initial={
