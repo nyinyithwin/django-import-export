@@ -104,7 +104,7 @@ class ImportMixin(ImportExportMixinBase):
         return [f for f in self.formats if f().can_import()]
 
     def process_import(self, request, *args, **kwargs):
-    '''
+        '''
         Perform the actual import action (after the user has confirmed he
         wishes to import)
         '''
