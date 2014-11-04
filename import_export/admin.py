@@ -152,7 +152,7 @@ class ImportMixin(ImportExportMixinBase):
             )
             content_type_id=ContentType.objects.get_for_model(self.model).pk
             queue.enqueue(process, import_file_name)
-            success_message = _(content_type_id)
+            success_message = _(str(content_type_id))
             messages.success(request, success_message)
             
         
