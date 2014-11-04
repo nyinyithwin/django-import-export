@@ -15,6 +15,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
+
     
 from .forms import (
     ImportForm,
@@ -59,7 +60,7 @@ class ImportMixin(ImportExportMixinBase):
     """
     Import mixin.
     """
-
+    test = False
     #: template for change_list view
     change_list_template = 'admin/import_export/change_list_import.html'
     #: template for import view
@@ -70,7 +71,6 @@ class ImportMixin(ImportExportMixinBase):
     formats = DEFAULT_FORMATS
     #: import data encoding
     from_encoding = "utf-8"
-    
     def get_urls(self):
         urls = super(ImportMixin, self).get_urls()
         info = self.get_model_info()
@@ -102,7 +102,7 @@ class ImportMixin(ImportExportMixinBase):
         Returns available import formats.
         """
         return [f for f in self.formats if f().can_import()]
-
+    
     def process_import(self, request, *args, **kwargs):
         '''
         Perform the actual import action (after the user has confirmed he
@@ -112,7 +112,7 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
 
         confirm_form = ConfirmImportForm(request.POST)
-        if confirm_form.is_valid():
+        if confirm_form.is_valid() and test==True:
             import_formats = self.get_import_formats()
             input_format = import_formats[
                 int(confirm_form.cleaned_data['input_format'])
@@ -137,21 +137,12 @@ class ImportMixin(ImportExportMixinBase):
                 RowResult.IMPORT_TYPE_DELETE: DELETION,
             }
             content_type_id=ContentType.objects.get_for_model(self.model).pk
-            for row in result:
-                if row.import_type != row.IMPORT_TYPE_SKIP:
-                    LogEntry.objects.log_action(
-                        user_id=request.user.pk,
-                        content_type_id=content_type_id,
-                        object_id=row.object_id,
-                        object_repr=row.object_repr,
-                        action_flag=logentry_map[row.import_type],
-                        change_message="%s through import_export" % row.import_type,
-                    )
+            
 
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
-            os.remove(import_file_name)
+            test = False
 
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
@@ -208,7 +199,7 @@ class ImportMixin(ImportExportMixinBase):
         context['form'] = form
         context['opts'] = self.model._meta
         context['fields'] = [f.column_name for f in resource.get_fields()]
-
+        test = True
         return TemplateResponse(request, [self.import_template_name],
                                 context, current_app=self.admin_site.name)
 
