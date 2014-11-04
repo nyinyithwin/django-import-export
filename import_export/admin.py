@@ -112,7 +112,7 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
 
         confirm_form = ConfirmImportForm(request.POST)
-        if confirm_form.is_valid() and test==True:
+        if confirm_form.is_valid() and self.test==True:
             import_formats = self.get_import_formats()
             input_format = import_formats[
                 int(confirm_form.cleaned_data['input_format'])
@@ -199,7 +199,7 @@ class ImportMixin(ImportExportMixinBase):
         context['form'] = form
         context['opts'] = self.model._meta
         context['fields'] = [f.column_name for f in resource.get_fields()]
-        test = True
+        self.test = True
         return TemplateResponse(request, [self.import_template_name],
                                 context, current_app=self.admin_site.name)
 
