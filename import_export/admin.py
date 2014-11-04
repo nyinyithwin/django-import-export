@@ -151,6 +151,7 @@ class ImportMixin(ImportExportMixinBase):
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
+            os.remove(import_file_name)
 
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
