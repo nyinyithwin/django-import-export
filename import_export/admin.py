@@ -13,7 +13,7 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-import django_rq
+import django_rq3234
 
 def process(import_file_name):
     import_file = open(data)
