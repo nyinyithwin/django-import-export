@@ -15,20 +15,6 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-def tableprocess(result):
-    for row in result:
-        if row.import_type != row.IMPORT_TYPE_SKIP:
-            LogEntry.objects.log_action(
-            user_id=request.user.pk,
-            content_type_id=content_type_id,
-            object_id=row.object_id,
-            object_repr=row.object_repr,
-            action_flag=logentry_map[row.import_type],
-            change_message="%s through import_export" % row.import_type,
-        )
-
-
-
     
 from .forms import (
     ImportForm,
@@ -148,8 +134,16 @@ class ImportMixin(ImportExportMixinBase):
             dataset = input_format.create_dataset(data)
             result = resource.import_data(dataset, dry_run=False,
                         raise_errors=True)
-            queue = django_rq.get_queue('high')
-            queue.enqueue(tableprocess, result)
+            for row in result:
+                if row.import_type != row.IMPORT_TYPE_SKIP:
+                    LogEntry.objects.log_action(
+                    user_id=request.user.pk,
+                    content_type_id=content_type_id,
+                    object_id=row.object_id,
+                    object_repr=row.object_repr,
+                    action_flag=logentry_map[row.import_type],
+                    change_message="%s through import_export" % row.import_type,
+                )
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
