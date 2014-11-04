@@ -13,7 +13,7 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-import django_rq3234
+import django_rq
 
 def process(import_file_name):
     import_file = open(data)
@@ -39,7 +39,6 @@ def process(import_file_name):
                 change_message="%s through import_export" % row.import_type,
                 )
 
-queue = django_rq.get_queue('high')
 
 from .forms import (
     ImportForm,
@@ -152,6 +151,7 @@ class ImportMixin(ImportExportMixinBase):
             data = import_file.read()
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
+            queue = django_rq.get_queue('high')
             queue.enqueue(process, data)
             success_message = _('Import finished')
             messages.success(request, success_message)
