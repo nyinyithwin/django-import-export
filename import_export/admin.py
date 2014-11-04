@@ -16,10 +16,7 @@ from django.core.urlresolvers import reverse
 import django_rq
 
 def process(import_file_name):
-    import_file = open(import_file_name)
-    data = import_file.read()
-    if not input_format.is_binary() and 'utf-8':
-        data = force_text(data, 'utf-8')
+    import_file = open(data)
     dataset = input_format.create_dataset(data)
 
     result = resource.import_data(dataset, dry_run=False,
@@ -41,7 +38,6 @@ def process(import_file_name):
                 action_flag=logentry_map[row.import_type],
                 change_message="%s through import_export" % row.import_type,
                 )
-    import_file.close()    
 
 queue = django_rq.get_queue('high')
 
@@ -156,12 +152,10 @@ class ImportMixin(ImportExportMixinBase):
             data = import_file.read()
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
-            dataset = input_format.create_dataset(data)
-
-            result = resource.import_data(dataset, dry_run=False,
-                                 raise_errors=True)
+            queue.enqueue(process, data)
             success_message = _('Import finished')
             messages.success(request, success_message)
+            import_file.close()  
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
