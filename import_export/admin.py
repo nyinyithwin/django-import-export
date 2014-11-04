@@ -15,7 +15,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-
+test = False;
     
 from .forms import (
     ImportForm,
@@ -60,7 +60,6 @@ class ImportMixin(ImportExportMixinBase):
     """
     Import mixin.
     """
-    test = False
     #: template for change_list view
     change_list_template = 'admin/import_export/change_list_import.html'
     #: template for import view
@@ -112,7 +111,7 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
 
         confirm_form = ConfirmImportForm(request.POST)
-        if confirm_form.is_valid() and self.test:
+        if confirm_form.is_valid() and test:
             import_formats = self.get_import_formats()
             input_format = import_formats[
                 int(confirm_form.cleaned_data['input_format'])
@@ -199,7 +198,7 @@ class ImportMixin(ImportExportMixinBase):
         context['form'] = form
         context['opts'] = self.model._meta
         context['fields'] = [f.column_name for f in resource.get_fields()]
-        self.test = True
+        test = True
         return TemplateResponse(request, [self.import_template_name],
                                 context, current_app=self.admin_site.name)
 
