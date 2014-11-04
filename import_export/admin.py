@@ -104,12 +104,13 @@ class ImportMixin(ImportExportMixinBase):
         return [f for f in self.formats if f().can_import()]
 
     def process_import(self, request, *args, **kwargs):
-        '''
+    '''
         Perform the actual import action (after the user has confirmed he
         wishes to import)
         '''
         opts = self.model._meta
         resource = self.get_import_resource_class()()
+
         confirm_form = ConfirmImportForm(request.POST)
         if confirm_form.is_valid():
             import_formats = self.get_import_formats()
@@ -122,6 +123,13 @@ class ImportMixin(ImportExportMixinBase):
             )
             import_file = open(import_file_name, input_format.get_read_mode())
             data = import_file.read()
+            if not input_format.is_binary() and self.from_encoding:
+                data = force_text(data, self.from_encoding)
+            dataset = input_format.create_dataset(data)
+
+            result = resource.import_data(dataset, dry_run=False,
+                                 raise_errors=True)
+
             # Add imported objects to LogEntry
             logentry_map = {
                 RowResult.IMPORT_TYPE_NEW: ADDITION,
@@ -129,24 +137,21 @@ class ImportMixin(ImportExportMixinBase):
                 RowResult.IMPORT_TYPE_DELETE: DELETION,
             }
             content_type_id=ContentType.objects.get_for_model(self.model).pk
-            if not input_format.is_binary() and self.from_encoding:
-                data = force_text(data, self.from_encoding)
-            dataset = input_format.create_dataset(data)
-            result = resource.import_data(dataset, dry_run=False,
-                        raise_errors=True)
             for row in result:
                 if row.import_type != row.IMPORT_TYPE_SKIP:
                     LogEntry.objects.log_action(
-                    user_id=request.user.pk,
-                    content_type_id=content_type_id,
-                    object_id=row.object_id,
-                    object_repr=row.object_repr,
-                    action_flag=logentry_map[row.import_type],
-                    change_message="%s through import_export" % row.import_type,
-                )
+                        user_id=request.user.pk,
+                        content_type_id=content_type_id,
+                        object_id=row.object_id,
+                        object_repr=row.object_repr,
+                        action_flag=logentry_map[row.import_type],
+                        change_message="%s through import_export" % row.import_type,
+                    )
+
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
+
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
