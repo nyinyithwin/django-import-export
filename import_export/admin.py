@@ -16,7 +16,7 @@ from django.core.urlresolvers import reverse
 import django_rq
 
 def process(import_file_name):
-    import_file = open(import_file_name, input_format.get_read_mode())
+    import_file = open(import_file_name)
     data = import_file.read()
     if not input_format.is_binary() and 'utf-8':
         data = force_text(data, 'utf-8')
