@@ -13,10 +13,7 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-import django_rq
 
-test = False;
-    
 from .forms import (
     ImportForm,
     ConfirmImportForm,
@@ -60,6 +57,7 @@ class ImportMixin(ImportExportMixinBase):
     """
     Import mixin.
     """
+
     #: template for change_list view
     change_list_template = 'admin/import_export/change_list_import.html'
     #: template for import view
@@ -70,6 +68,7 @@ class ImportMixin(ImportExportMixinBase):
     formats = DEFAULT_FORMATS
     #: import data encoding
     from_encoding = "utf-8"
+
     def get_urls(self):
         urls = super(ImportMixin, self).get_urls()
         info = self.get_model_info()
@@ -101,7 +100,7 @@ class ImportMixin(ImportExportMixinBase):
         Returns available import formats.
         """
         return [f for f in self.formats if f().can_import()]
-    
+
     def process_import(self, request, *args, **kwargs):
         '''
         Perform the actual import action (after the user has confirmed he
@@ -111,7 +110,7 @@ class ImportMixin(ImportExportMixinBase):
         resource = self.get_import_resource_class()()
 
         confirm_form = ConfirmImportForm(request.POST)
-        if confirm_form.is_valid() and test:
+        if confirm_form.is_valid():
             import_formats = self.get_import_formats()
             input_format = import_formats[
                 int(confirm_form.cleaned_data['input_format'])
@@ -136,18 +135,25 @@ class ImportMixin(ImportExportMixinBase):
                 RowResult.IMPORT_TYPE_DELETE: DELETION,
             }
             content_type_id=ContentType.objects.get_for_model(self.model).pk
-            
+            for row in result:
+                if row.import_type != row.IMPORT_TYPE_SKIP:
+                    LogEntry.objects.log_action(
+                        user_id=request.user.pk,
+                        content_type_id=content_type_id,
+                        object_id=row.object_id,
+                        object_repr=row.object_repr,
+                        action_flag=logentry_map[row.import_type],
+                        change_message="%s through import_export" % row.import_type,
+                    )
 
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()
-            test = False
 
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
 
-    
     def import_action(self, request, *args, **kwargs):
         '''
         Perform a dry_run of the import to make sure the import will not
@@ -176,29 +182,28 @@ class ImportMixin(ImportExportMixinBase):
                     uploaded_file.write(chunk)
 
             # then read the file, using the proper format-specific mode
-            #with open(uploaded_file.name,
-            #          input_format.get_read_mode()) as uploaded_import_file:
-            #    # warning, big files may exceed memory
-            #    data = uploaded_import_file.read()
-            #    queue.enqueue(tableprocess, data)
-            #    if not input_format.is_binary() and self.from_encoding:
-            #        data = force_text(data, self.from_encoding)
-            #    dataset = input_format.create_dataset(data)
-            #    result = resource.import_data(dataset, dry_run=True,
-            #                                  raise_errors=False)
+            with open(uploaded_file.name,
+                      input_format.get_read_mode()) as uploaded_import_file:
+                # warning, big files may exceed memory
+                data = uploaded_import_file.read()
+                if not input_format.is_binary() and self.from_encoding:
+                    data = force_text(data, self.from_encoding)
+                dataset = input_format.create_dataset(data)
+                result = resource.import_data(dataset, dry_run=True,
+                                              raise_errors=False)
 
-            #context['result'] = result
+            context['result'] = result
 
-            #if not result.has_errors():
-            context['confirm_form'] = ConfirmImportForm(initial={
-                'import_file_name': os.path.basename(uploaded_file.name),
-                'input_format': form.cleaned_data['input_format'],
-            })
+            if not result.has_errors():
+                context['confirm_form'] = ConfirmImportForm(initial={
+                    'import_file_name': os.path.basename(uploaded_file.name),
+                    'input_format': form.cleaned_data['input_format'],
+                })
 
         context['form'] = form
         context['opts'] = self.model._meta
         context['fields'] = [f.column_name for f in resource.get_fields()]
-        test = True
+
         return TemplateResponse(request, [self.import_template_name],
                                 context, current_app=self.admin_site.name)
 
@@ -256,7 +261,6 @@ class ExportMixin(ImportExportMixinBase):
     def get_export_queryset(self, request):
         """
         Returns export queryset.
-
         Default implementation respects applied search and filters.
         """
         # copied from django/contrib/admin/options.py
