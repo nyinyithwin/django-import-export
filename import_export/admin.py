@@ -35,7 +35,7 @@ def process(import_file_name):
         if row.import_type != row.IMPORT_TYPE_SKIP:
             LogEntry.objects.log_action(
                 user_id=request.user.pk,
-                content_type_id=1,
+                content_type_id=8,
                 object_id=row.object_id,
                 object_repr=row.object_repr,
                 action_flag=logentry_map[row.import_type],
@@ -152,10 +152,8 @@ class ImportMixin(ImportExportMixinBase):
             )
             content_type_id=ContentType.objects.get_for_model(self.model).pk
             queue.enqueue(process, import_file_name)
-            success_message = _(str(content_type_id))
+            success_message = _('Import finished')
             messages.success(request, success_message)
-            
-        
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
