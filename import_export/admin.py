@@ -14,8 +14,18 @@ from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
-import_file_name_2 = ""
 
+def tableprocess(result):
+    for row in result:
+        if row.import_type != row.IMPORT_TYPE_SKIP:
+            LogEntry.objects.log_action(
+            user_id=request.user.pk,
+            content_type_id=content_type_id,
+            object_id=row.object_id,
+            object_repr=row.object_repr,
+            action_flag=logentry_map[row.import_type],
+            change_message="%s through import_export" % row.import_type,
+        )
 
 
 
@@ -115,19 +125,6 @@ class ImportMixin(ImportExportMixinBase):
         opts = self.model._meta
         resource = self.get_import_resource_class()()
         confirm_form = ConfirmImportForm(request.POST)
-        def tableprocess():
-            for row in result:
-                if row.import_type != row.IMPORT_TYPE_SKIP:
-                    LogEntry.objects.log_action(
-                    user_id=request.user.pk,
-                    content_type_id=content_type_id,
-                    object_id=row.object_id,
-                    object_repr=row.object_repr,
-                    action_flag=logentry_map[row.import_type],
-                    change_message="%s through import_export" % row.import_type,
-                )
-            import_file.close()
-        
         if confirm_form.is_valid():
             import_formats = self.get_import_formats()
             input_format = import_formats[
@@ -152,9 +149,10 @@ class ImportMixin(ImportExportMixinBase):
             result = resource.import_data(dataset, dry_run=False,
                         raise_errors=True)
             queue = django_rq.get_queue('high')
-            queue.enqueue(tableprocess)
+            queue.enqueue(tableprocess, result)
             success_message = _('Import finished')
             messages.success(request, success_message)
+            import_file.close()
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
