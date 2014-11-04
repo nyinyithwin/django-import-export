@@ -151,7 +151,15 @@ class ImportMixin(ImportExportMixinBase):
                 confirm_form.cleaned_data['import_file_name']
             )
             content_type_id=ContentType.objects.get_for_model(self.model).pk
-            queue.enqueue(process, import_file_name)
+            #queue.enqueue(process, import_file_name)
+            import_file = open(import_file_name, input_format.get_read_mode())
+            data = import_file.read()
+            if not input_format.is_binary() and self.from_encoding:
+                data = force_text(data, self.from_encoding)
+            dataset = input_format.create_dataset(data)
+
+            result = resource.import_data(dataset, dry_run=False,
+                                 raise_errors=True)
             success_message = _('Import finished')
             messages.success(request, success_message)
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
