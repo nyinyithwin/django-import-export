@@ -127,18 +127,7 @@ class ImportMixin(ImportExportMixinBase):
                 data = force_text(data, self.from_encoding)
             dataset = input_format.create_dataset(data)
             def process(dataset):
-                result = resource.import_data(dataset, dry_run=False,
-                                 raise_errors=True)
-                for row in result:
-                    if row.import_type != row.IMPORT_TYPE_SKIP:
-                        LogEntry.objects.log_action(
-                            user_id=request.user.pk,
-                            content_type_id=8,
-                            object_id=row.object_id,
-                            object_repr=row.object_repr,
-                            action_flag=logentry_map[row.import_type],
-                            change_message="%s through import_export" % row.import_type,
-                            )
+                result = resource.import_data(dataset, dry_run=False, raise_errors=True)
             queue = django_rq.get_queue('high')
             queue.enqueue(process, dataset)
             # Add imported objects to LogEntry
