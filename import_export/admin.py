@@ -130,15 +130,15 @@ class ImportMixin(ImportExportMixinBase):
                 result = resource.import_data(dataset, dry_run=False,
                                  raise_errors=True)
                 for row in result:
-                if row.import_type != row.IMPORT_TYPE_SKIP:
-                    LogEntry.objects.log_action(
-                        user_id=request.user.pk,
-                        content_type_id=8,
-                        object_id=row.object_id,
-                        object_repr=row.object_repr,
-                        action_flag=logentry_map[row.import_type],
-                        change_message="%s through import_export" % row.import_type,
-                    )
+                    if row.import_type != row.IMPORT_TYPE_SKIP:
+                        LogEntry.objects.log_action(
+                            user_id=request.user.pk,
+                            content_type_id=8,
+                            object_id=row.object_id,
+                            object_repr=row.object_repr,
+                            action_flag=logentry_map[row.import_type],
+                            change_message="%s through import_export" % row.import_type,
+                            )
             queue = django_rq.get_queue('high')
             queue.enqueue(process, dataset)
             # Add imported objects to LogEntry
