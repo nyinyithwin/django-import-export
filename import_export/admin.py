@@ -15,8 +15,9 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-def process(data):
-    dataset = input_format.create_dataset(data)
+def process(dataset):
+    a = ImportMixin(ImportExportMixinBase)
+    resource = a.get_import_resource_class()()
     result = resource.import_data(dataset, dry_run=False,
                          raise_errors=True)
 
@@ -149,8 +150,9 @@ class ImportMixin(ImportExportMixinBase):
             data = import_file.read()
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
+            dataset = input_format.create_dataset(data)
             queue = django_rq.get_queue('high')
-            queue.enqueue(process, data)
+            queue.enqueue(process, dataset)
             success_message = _('Import finished')
             messages.success(request, success_message)
             import_file.close()  
