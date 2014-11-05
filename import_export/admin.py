@@ -15,29 +15,6 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-def process(dataset):
-    a = ImportMixin(ImportExportMixinBase)
-    resource = a.get_import_resource_class()()
-    result = resource.import_data(dataset, dry_run=False,
-                         raise_errors=True)
-
-            # Add imported objects to LogEntry
-    logentry_map = {
-        RowResult.IMPORT_TYPE_NEW: ADDITION,
-        RowResult.IMPORT_TYPE_UPDATE: CHANGE,
-        RowResult.IMPORT_TYPE_DELETE: DELETION,
-    }
-    for row in result:
-        if row.import_type != row.IMPORT_TYPE_SKIP:
-            LogEntry.objects.log_action(
-                user_id=request.user.pk,
-                content_type_id=8,
-                object_id=row.object_id,
-                object_repr=row.object_repr,
-                action_flag=logentry_map[row.import_type],
-                change_message="%s through import_export" % row.import_type,
-                )
-
 
 from .forms import (
     ImportForm,
@@ -144,18 +121,38 @@ class ImportMixin(ImportExportMixinBase):
                 tempfile.gettempdir(),
                 confirm_form.cleaned_data['import_file_name']
             )
-            content_type_id=ContentType.objects.get_for_model(self.model).pk
-            #queue.enqueue(process, import_file_name)
             import_file = open(import_file_name, input_format.get_read_mode())
             data = import_file.read()
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
             dataset = input_format.create_dataset(data)
+            def process(dataset):
+                result = resource.import_data(dataset, dry_run=False,
+                                 raise_errors=True)
             queue = django_rq.get_queue('high')
             queue.enqueue(process, dataset)
+            # Add imported objects to LogEntry
+            logentry_map = {
+                RowResult.IMPORT_TYPE_NEW: ADDITION,
+                RowResult.IMPORT_TYPE_UPDATE: CHANGE,
+                RowResult.IMPORT_TYPE_DELETE: DELETION,
+            }
+            content_type_id=ContentType.objects.get_for_model(self.model).pk
+            for row in result:
+                if row.import_type != row.IMPORT_TYPE_SKIP:
+                    LogEntry.objects.log_action(
+                        user_id=request.user.pk,
+                        content_type_id=content_type_id,
+                        object_id=row.object_id,
+                        object_repr=row.object_repr,
+                        action_flag=logentry_map[row.import_type],
+                        change_message="%s through import_export" % row.import_type,
+                    )
+
             success_message = _('Import finished')
             messages.success(request, success_message)
-            import_file.close()  
+            import_file.close()
+            
             url = reverse('admin:%s_%s_changelist' % self.get_model_info(),
                           current_app=self.admin_site.name)
             return HttpResponseRedirect(url)
