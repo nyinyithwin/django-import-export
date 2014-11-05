@@ -15,10 +15,8 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 import django_rq
 
-def process(import_file_name):
-    import_file = open(data)
+def process(data):
     dataset = input_format.create_dataset(data)
-
     result = resource.import_data(dataset, dry_run=False,
                          raise_errors=True)
 
