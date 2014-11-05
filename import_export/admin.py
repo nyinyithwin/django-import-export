@@ -126,10 +126,9 @@ class ImportMixin(ImportExportMixinBase):
             if not input_format.is_binary() and self.from_encoding:
                 data = force_text(data, self.from_encoding)
             dataset = input_format.create_dataset(data)
-            def process(dataset):
-                result = resource.import_data(dataset, dry_run=False, raise_errors=True)
-            queue = django_rq.get_queue('high')
-            queue.enqueue(process, dataset)
+            result = resource.import_data(dataset, dry_run=False, raise_errors=True)
+            #queue = django_rq.get_queue('high')
+            #queue.enqueue(process, dataset)
             # Add imported objects to LogEntry
             logentry_map = {
                 RowResult.IMPORT_TYPE_NEW: ADDITION,
