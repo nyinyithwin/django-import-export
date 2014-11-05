@@ -4,6 +4,7 @@ import tempfile
 from datetime import datetime
 import os.path
 
+from racepackapp import views
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from django.conf.urls import patterns, url
@@ -80,7 +81,7 @@ class ImportMixin(ImportExportMixinBase):
                 self.admin_site.admin_view(self.process_import),
                 name='%s_%s_process_import' % info),
             url(r'^import/$',
-                self.admin_site.admin_view(self.import_action),
+                self.admin_site.admin_view(views.import_csv),
                 name='%s_%s_import' % info),
         )
         return my_urls + urls
